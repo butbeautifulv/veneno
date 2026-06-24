@@ -1,0 +1,11 @@
+# Veneno security controls (stub) — extend from veil JCSF mapping.
+
+controls:
+  - id: veneno-tool-least-privilege
+    description: Catalog tools scoped; no wildcard shell in production profile
+  - id: veneno-runner-isolation
+    description: Subprocess execution on dedicated MCP host
+
+references:
+  - docs/engage/engage-hardening.md
+  - https://github.com/butbeautifulv/veil/blob/main/deploy/security/veil-controls.yaml

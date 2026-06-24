@@ -79,7 +79,7 @@ func loadBase(listen, env string) *Config {
 		WorkerConcurrency: workerConcurrency(),
 		MaxParallel:       maxParallel(),
 		VeilAPI: VeilAPIConfig{
-			BaseURL:      getenv("VENENO_VEIL_API_URL", "http://localhost:8090"),
+			BaseURL:      veilAPIBaseURL(),
 			ClientID:     getenv("ENGAGE_VEIL_CLIENT_ID", ""),
 			ClientSecret: getenv("ENGAGE_VEIL_CLIENT_SECRET", ""),
 			TokenURL:     getenv("ENGAGE_VEIL_TOKEN_URL", ""),
@@ -123,6 +123,13 @@ func getenv(k, def string) string {
 		return v
 	}
 	return def
+}
+
+func veilAPIBaseURL() string {
+	if v := getenv("VENENO_VEIL_API_URL", ""); v != "" {
+		return v
+	}
+	return getenv("ENGAGE_VEIL_API_URL", "http://localhost:8090")
 }
 
 func workerConcurrency() int {
