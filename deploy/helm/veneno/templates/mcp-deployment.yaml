@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: veneno-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: veneno-mcp
+  template:
+    metadata:
+      labels:
+        app: veneno-mcp
+    spec:
+      containers:
+        - name: mcp
+          image: veneno-mcp:latest
+          ports:
+            - containerPort: 8892

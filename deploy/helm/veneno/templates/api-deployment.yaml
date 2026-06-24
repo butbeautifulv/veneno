@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: veneno-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: veneno-api
+  template:
+    metadata:
+      labels:
+        app: veneno-api
+    spec:
+      containers:
+        - name: api
+          image: veneno-api:latest
+          ports:
+            - containerPort: 8890
