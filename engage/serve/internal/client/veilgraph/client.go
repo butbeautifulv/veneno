@@ -12,16 +12,22 @@ import (
 	"time"
 )
 
-// Config for veil-api access (service account).
+// Config for veil-api access (service account or auth-broker).
 type Config struct {
 	BaseURL      string
 	ClientID     string
 	ClientSecret string
 	TokenURL     string
 	HTTPClient   *http.Client
+
+	AuthBrokerURL          string
+	AuthBrokerServiceToken string
+	AuthBrokerServiceID    string
+	AuthBrokerAudience     string
+	UseAuthBroker          bool
 }
 
-// Client calls veil graph read API with OAuth2 client credentials.
+// Client calls veil graph read API with OAuth2 client credentials or auth-broker.
 type Client struct {
 	cfg   Config
 	mu    sync.Mutex
@@ -34,6 +40,9 @@ func New(cfg Config) *Client {
 		cfg.HTTPClient = http.DefaultClient
 	}
 	cfg.BaseURL = strings.TrimSuffix(strings.TrimSpace(cfg.BaseURL), "/")
+	if cfg.AuthBrokerAudience == "" {
+		cfg.AuthBrokerAudience = "veil-api"
+	}
 	return &Client{cfg: cfg}
 }
 
@@ -42,6 +51,10 @@ func (c *Client) Enabled() bool {
 }
 
 func (c *Client) oauthConfigured() bool {
+	if c.cfg.UseAuthBroker {
+		return strings.TrimSpace(c.cfg.AuthBrokerURL) != "" &&
+			strings.TrimSpace(c.cfg.AuthBrokerServiceToken) != ""
+	}
 	return strings.TrimSpace(c.cfg.ClientID) != "" &&
 		strings.TrimSpace(c.cfg.ClientSecret) != "" &&
 		strings.TrimSpace(c.cfg.TokenURL) != ""
@@ -164,6 +177,9 @@ func (c *Client) bearer(ctx context.Context) (string, error) {
 	if c.token != "" && time.Now().Before(c.exp.Add(-30*time.Second)) {
 		return c.token, nil
 	}
+	if c.cfg.UseAuthBroker {
+		return c.bearerFromBroker(ctx)
+	}
 	if c.cfg.ClientID == "" || c.cfg.ClientSecret == "" || c.cfg.TokenURL == "" {
 		return "", fmt.Errorf("veil api oauth not configured")
 	}
@@ -192,5 +208,51 @@ func (c *Client) bearer(ctx context.Context) (string, error) {
 	}
 	c.token = out.AccessToken
 	c.exp = time.Now().Add(time.Duration(out.ExpiresIn) * time.Second)
+	return c.token, nil
+}
+
+func (c *Client) bearerFromBroker(ctx context.Context) (string, error) {
+	base := strings.TrimSuffix(strings.TrimSpace(c.cfg.AuthBrokerURL), "/")
+	if base == "" || strings.TrimSpace(c.cfg.AuthBrokerServiceToken) == "" {
+		return "", fmt.Errorf("auth broker not configured")
+	}
+	body, _ := json.Marshal(map[string]any{
+		"audience": c.cfg.AuthBrokerAudience,
+		"scopes":   []string{},
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/v1/token", strings.NewReader(string(body)))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.cfg.AuthBrokerServiceToken)
+	if id := strings.TrimSpace(c.cfg.AuthBrokerServiceID); id != "" {
+		req.Header.Set("X-Service-Id", id)
+	}
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("auth broker: %d %s", resp.StatusCode, string(raw))
+	}
+	var out struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return "", err
+	}
+	if out.AccessToken == "" {
+		return "", fmt.Errorf("empty access_token from broker")
+	}
+	expiresIn := out.ExpiresIn
+	if expiresIn < 1 {
+		expiresIn = 60
+	}
+	c.token = out.AccessToken
+	c.exp = time.Now().Add(time.Duration(expiresIn) * time.Second)
 	return c.token, nil
 }

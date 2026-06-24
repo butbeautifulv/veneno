@@ -43,6 +43,12 @@ type VeilAPIConfig struct {
 	ClientID     string
 	ClientSecret string
 	TokenURL     string
+	// Auth broker (optional): when UseAuthBroker is true, tokens come from cxado auth-broker.
+	AuthBrokerURL          string
+	AuthBrokerServiceToken string
+	AuthBrokerServiceID    string
+	AuthBrokerAudience     string
+	UseAuthBroker          bool
 }
 
 type MCPHTTPConfig struct {
@@ -83,6 +89,11 @@ func loadBase(listen, env string) *Config {
 			ClientID:     getenv("ENGAGE_VEIL_CLIENT_ID", ""),
 			ClientSecret: getenv("ENGAGE_VEIL_CLIENT_SECRET", ""),
 			TokenURL:     getenv("ENGAGE_VEIL_TOKEN_URL", ""),
+			AuthBrokerURL:          getenv("BROKER_URL", ""),
+			AuthBrokerServiceToken: getenv("BROKER_SERVICE_TOKEN", ""),
+			AuthBrokerServiceID:    getenv("BROKER_SERVICE_ID", "veneno-engage"),
+			AuthBrokerAudience:     getenv("BROKER_VEIL_AUDIENCE", "veil-api"),
+			UseAuthBroker:          envBool("USE_AUTH_BROKER", false),
 		},
 		MCPHTTP: MCPHTTPConfig{
 			Enabled:   envBool("ENGAGE_MCP_HTTP_ENABLED", false),

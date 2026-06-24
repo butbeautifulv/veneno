@@ -156,10 +156,15 @@ func InitAPI(cfg *config.Config, logger interface{ Info(string, ...any) }) (*API
 		TargetGuard: security.ParseTargetGuardMode(os.Getenv),
 	}
 	veil := veilgraph.New(veilgraph.Config{
-		BaseURL:      cfg.VeilAPI.BaseURL,
-		ClientID:     cfg.VeilAPI.ClientID,
-		ClientSecret: cfg.VeilAPI.ClientSecret,
-		TokenURL:     cfg.VeilAPI.TokenURL,
+		BaseURL:                cfg.VeilAPI.BaseURL,
+		ClientID:               cfg.VeilAPI.ClientID,
+		ClientSecret:           cfg.VeilAPI.ClientSecret,
+		TokenURL:               cfg.VeilAPI.TokenURL,
+		AuthBrokerURL:          cfg.VeilAPI.AuthBrokerURL,
+		AuthBrokerServiceToken: cfg.VeilAPI.AuthBrokerServiceToken,
+		AuthBrokerServiceID:    cfg.VeilAPI.AuthBrokerServiceID,
+		AuthBrokerAudience:     cfg.VeilAPI.AuthBrokerAudience,
+		UseAuthBroker:          cfg.VeilAPI.UseAuthBroker,
 	})
 	cveSvc := cve.NewService(veil, cve.DefaultNVDClient())
 	intel := &intelligence.Service{
