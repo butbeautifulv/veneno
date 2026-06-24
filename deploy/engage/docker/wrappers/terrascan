@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+if [ -x /opt/terrascan/bin/terrascan ]; then
+  exec /opt/terrascan/bin/terrascan "$@"
+fi
+exec engage-stub "$@"

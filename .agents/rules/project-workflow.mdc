@@ -1,0 +1,20 @@
+---
+description: veneno project overlay — tool catalog, subprocess exec, veil-api read
+alwaysApply: true
+---
+
+# veneno project workflow
+
+Core rules via cxado `make rules-link`: `core-*.mdc`.
+
+## Scope
+
+- `engage/serve` — catalog tools, MCP, API `/api/*`
+- Read graph only via HTTP to veil (`VENENO_VEIL_API_URL`)
+- No direct Neo4j or veil layer imports
+
+## Before finishing
+
+1. `make test-engage` for touched packages
+2. Never commit secrets or `.env`
+3. Catalog changes: update parity docs in `docs/engage/`
